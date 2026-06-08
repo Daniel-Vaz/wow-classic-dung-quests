@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Vanilla WoW — Dungeon Quest Compendium</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-emblem">⚔️</div>
+  <h1 class="site-title">Vanilla Dungeon Quest<br>Compendium</h1>
+  <p class="site-subtitle">Classic World of Warcraft · All Instances · All Quests</p>
+  <div class="header-divider">
+    <div class="header-divider-icon">✦</div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" type="text" id="searchInput" placeholder="Search quests, NPCs, locations…">
+  </div>
+  <div class="filter-group" id="filterGroup">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="has-items">Has Gear</button>
+    <button class="filter-btn" data-filter="has-rewards">Has Rewards</button>
+    <button class="filter-btn" data-filter="completed">Completed</button>
+    <button class="filter-btn" data-filter="incomplete">Incomplete</button>
+  </div>
+  <div class="controls-right">
+    <div class="quest-count" id="questCount"><span id="visibleCount">0</span> quests</div>
+    <button class="view-btn active" id="gridViewBtn" title="Grid view">⊞</button>
+    <button class="view-btn" id="listViewBtn" title="List view">☰</button>
+  </div>
+</div>
+
+<nav class="dungeon-tabs" id="dungeonTabs"></nav>
+
+<div class="main">
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">⚔ By Location</div>
+        <div id="locationList"></div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">📜 Prequest Chains</div>
+        <div id="prequestList"></div>
+      </div>
+    </aside>
+    <div class="content">
+      <div class="dungeon-header" id="dungeonHeader">
+        <div class="dungeon-icon" id="dungeonHeaderIcon">🏰</div>
+        <div class="dungeon-info">
+          <div class="dungeon-name" id="dungeonHeaderName">Select a Dungeon</div>
+          <div class="dungeon-meta" id="dungeonHeaderMeta"></div>
+        </div>
+        <div class="dungeon-progress">
+          <div class="progress-label">QUEST PROGRESS</div>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
+          <div class="progress-fraction" id="progressFraction">0 / 0</div>
+        </div>
+      </div>
+      <div class="stats-bar" id="statsBar"></div>
+      <div id="quest-container" class="grid-view"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
