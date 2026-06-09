@@ -31,15 +31,19 @@ function normalizeQuest(q) {
     ...q,
     rewards,
     rewardChoices,
-    legacyItems,          // old items[] — merged into display if rewards is empty
-    prequest:      q.prequest      || '',
-    prequestLink:  q.prequestLink  || '',
-    chainId:       q.chainId       ?? null,
-    chainDepth:    q.chainDepth    ?? 0,
-    levels:        q.levels        || '',
-    minLevel:      q.minLevel      ?? null,
-    faction:       q.faction       || '',
-    preChain:      Array.isArray(q.preChain) ? q.preChain : [],
+    legacyItems,
+    prequest:       q.prequest       || '',
+    prequestLink:   q.prequestLink   || '',
+    chainId:        q.chainId        ?? null,
+    chainDepth:     q.chainDepth     ?? 0,
+    levels:         q.levels         || '',
+    minLevel:       q.minLevel       ?? null,
+    faction:        q.faction        || '',
+    startItem:      q.startItem      || '',
+    startItemLink:  q.startItemLink  || '',
+    preChain:       Array.isArray(q.preChain)  ? q.preChain  : [],
+    postChain:      Array.isArray(q.postChain) ? q.postChain : [],
+    absorbedBy:     q.absorbedBy     ?? null,
   };
 }
 
@@ -91,7 +95,8 @@ function renderDungeonHeader(dungeon) {
   document.getElementById('dungeonHeaderIcon').textContent = dungeon.icon;
   document.getElementById('dungeonHeaderName').textContent = dungeon.name;
 
-  const quests = dungeon.quests.map(normalizeQuest);
+  // Exclude absorbed quests from all header counts — they're shown as chain context
+  const quests = dungeon.quests.map(normalizeQuest).filter(q => q.absorbedBy === null);
   const completedCount = quests.filter(q => completed[dungeon.id + '::' + q.name]).length;
 
   let metaHtml = `
@@ -115,7 +120,7 @@ function renderDungeonHeader(dungeon) {
 //  STATS BAR
 // ═══════════════════════════════════════
 function renderStatsBar(dungeon) {
-  const quests = dungeon.quests.map(normalizeQuest);
+  const quests = dungeon.quests.map(normalizeQuest).filter(q => q.absorbedBy === null);
   const totalXP = quests.reduce((s, q) => s + (q.xp || 0), 0);
   const withGear = quests.filter(q => q.rewards.length > 0 || q.rewardChoices.length > 0 || q.legacyItems.length > 0).length;
   const completedCount = quests.filter(q => completed[dungeon.id + '::' + q.name]).length;
@@ -201,6 +206,8 @@ function renderQuests() {
   container.className = currentView === 'grid' ? 'grid-view' : 'list-view';
 
   let quests = dungeon.quests.map(normalizeQuest).filter(q => {
+    // Never show absorbed quests as standalone cards
+    if (q.absorbedBy !== null) return false;
     const key = dungeon.id + '::' + q.name;
     const isComplete = !!completed[key];
     const hasGear = q.rewards.length > 0 || q.rewardChoices.length > 0 || q.legacyItems.length > 0;
@@ -244,30 +251,33 @@ function renderQuests() {
     return;
   }
 
-  // Group quests so chain members render together with a wrapper
+  // Group quests so chain members render together with a wrapper.
+  // Absorbed quests (isDungeon prereqs of another dungeon quest) are skipped here
+  // and shown instead inside the chain group of their absorber.
   const rendered = new Set();
-  const byId = {};
-  quests.forEach(q => { if (q.id) byId[q.id] = q; });
 
   quests.forEach(quest => {
-    if (rendered.has(quest.name)) return;
+    if (rendered.has(quest.id)) return;
+    // Skip quests absorbed into another quest's preChain display
+    if (quest.absorbedBy !== null) return;
 
     const cid = quest.chainId;
 
     if (cid !== null && quest.chainDepth === 0) {
       const chainMembers = quests.filter(q => q.chainId === cid);
-      // Only wrap when there are multiple dungeon quests OR external prerequisites
       const rootPrechain = quest.preChain || [];
-      const isGroup = chainMembers.length > 1 || rootPrechain.length > 0;
+      const rootPostchain = quest.postChain || [];
+      const isGroup = chainMembers.length > 1 || rootPrechain.length > 0 || rootPostchain.length > 0;
 
       if (isGroup) {
         const wrapper = document.createElement('div');
         wrapper.className = 'quest-chain-group';
 
+        const dungeonPartCount = chainMembers.length;
         const label = document.createElement('div');
         label.className = 'chain-group-label';
-        label.textContent = chainMembers.length > 1
-          ? `Quest Chain  (${chainMembers.length} parts)`
+        label.textContent = dungeonPartCount > 1
+          ? `Quest Chain  (${dungeonPartCount} dungeon parts)`
           : 'Quest Chain';
         wrapper.appendChild(label);
 
@@ -276,21 +286,27 @@ function renderQuests() {
         }
 
         chainMembers.forEach((cq, idx) => {
-          rendered.add(cq.name);
+          rendered.add(cq.id);
           const card = buildQuestCard(cq, dungeon, idx, chainMembers.length);
           wrapper.appendChild(card);
         });
+
+        if (rootPostchain.length > 0) {
+          wrapper.appendChild(buildPostchainBreadcrumb(rootPostchain));
+        }
 
         container.appendChild(wrapper);
         return;
       }
     }
 
-    if (!rendered.has(quest.name)) {
-      rendered.add(quest.name);
+    if (!rendered.has(quest.id)) {
+      rendered.add(quest.id);
       container.appendChild(buildQuestCard(quest, dungeon, null, null));
     }
   });
+
+  if (typeof $WowheadPower !== 'undefined') $WowheadPower.refreshLinks();
 }
 
 // ═══════════════════════════════════════
@@ -299,10 +315,69 @@ function renderQuests() {
 function buildPrechainBreadcrumb(preChain) {
   const el = document.createElement('div');
   el.className = 'chain-prechain';
-  const steps = preChain.map(s =>
-    `<a href="${s.url}" target="_blank" rel="noopener noreferrer" class="prechain-step">${s.name}</a>`
-  ).join('<span class="prechain-arrow">›</span>');
-  el.innerHTML = `<div class="prechain-flow">${steps}<span class="prechain-arrow">›</span></div>`;
+  const label = document.createElement('div');
+  label.className = 'chain-context-label';
+  label.textContent = 'Prerequisites';
+  el.appendChild(label);
+  const flow = document.createElement('div');
+  flow.className = 'prechain-flow';
+  preChain.forEach((s, i) => {
+    if (i > 0) {
+      const arrow = document.createElement('span');
+      arrow.className = 'prechain-arrow';
+      arrow.textContent = '›';
+      flow.appendChild(arrow);
+    }
+    const cls = 'prechain-step' + (s.isDungeon ? ' is-dungeon' : '');
+    const a = document.createElement('a');
+    a.href = s.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.className = cls;
+    a.title = s.isDungeon ? 'Dungeon quest — also in this list' : '';
+    a.textContent = s.name;
+    flow.appendChild(a);
+  });
+  const finalArrow = document.createElement('span');
+  finalArrow.textContent = '›';
+  finalArrow.className = 'prechain-arrow';
+  flow.appendChild(finalArrow);
+  el.appendChild(flow);
+  return el;
+}
+
+// ═══════════════════════════════════════
+//  POSTCHAIN BREADCRUMB
+// ═══════════════════════════════════════
+function buildPostchainBreadcrumb(postChain) {
+  const el = document.createElement('div');
+  el.className = 'chain-postchain';
+  const label = document.createElement('div');
+  label.className = 'chain-context-label';
+  label.textContent = 'Continue chain';
+  el.appendChild(label);
+  const flow = document.createElement('div');
+  flow.className = 'prechain-flow';
+  const startArrow = document.createElement('span');
+  startArrow.className = 'prechain-arrow';
+  startArrow.textContent = '›';
+  flow.appendChild(startArrow);
+  postChain.forEach((s, i) => {
+    if (i > 0) {
+      const arrow = document.createElement('span');
+      arrow.className = 'prechain-arrow';
+      arrow.textContent = '›';
+      flow.appendChild(arrow);
+    }
+    const a = document.createElement('a');
+    a.href = s.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.className = 'prechain-step postchain-step';
+    a.textContent = s.name;
+    flow.appendChild(a);
+  });
+  el.appendChild(flow);
   return el;
 }
 
@@ -328,13 +403,7 @@ function buildQuestCard(quest, dungeon, chainPos, chainTotal) {
   }
 
   // ---- Prequest row ----
-  let prequestHtml = '';
-  if (quest.prequest) {
-    const link = quest.prequestLink
-      ? `<a href="${quest.prequestLink}" target="_blank" rel="noopener noreferrer" class="prequest-chain-link">${quest.prequest}</a>`
-      : quest.prequest;
-    prequestHtml = `<div class="quest-row"><span class="quest-label">Req.</span><span class="quest-value prequest">${link}</span></div>`;
-  }
+  const prequestHtml = '';
 
   // ---- Rewards (always-give) ----
   const rewardItems = quest.rewards.length > 0 ? quest.rewards : quest.legacyItems;
@@ -367,11 +436,28 @@ function buildQuestCard(quest, dungeon, chainPos, chainTotal) {
     ? `<div class="faction-badge faction-${quest.faction.toLowerCase()}">${quest.faction}</div>`
     : '';
 
+  // ---- NPC / item link helpers ----
+  let startNpcHtml;
+  if (quest.startNpcLink) {
+    startNpcHtml = `<a href="${quest.startNpcLink}" target="_blank" rel="noopener noreferrer" class="npc-link">${quest.startNpc}</a>`;
+  } else if (quest.startNpc) {
+    startNpcHtml = quest.startNpc;
+  } else if (quest.startItemLink) {
+    startNpcHtml = `<a href="${quest.startItemLink}" target="_blank" rel="noopener noreferrer" class="item-link q1">${quest.startItem}</a>`;
+  } else if (quest.startItem) {
+    startNpcHtml = quest.startItem;
+  } else {
+    startNpcHtml = '—';
+  }
+  const endNpcHtml = quest.endNpcLink
+    ? `<a href="${quest.endNpcLink}" target="_blank" rel="noopener noreferrer" class="npc-link">${quest.endNpc}</a>`
+    : (quest.endNpc || '—');
+
   // ---- Turn-in row ----
   const turninHtml = quest.endNpc && quest.endNpc !== quest.startNpc
     ? `<div class="quest-row">
         <span class="quest-label">Turn in</span>
-        <span class="quest-value">${quest.endNpc}${quest.endLoc ? ` <span class="location">— ${quest.endLoc}</span>` : ''}</span>
+        <span class="quest-value">${endNpcHtml}${quest.endLoc ? ` <span class="location">— ${quest.endLoc}</span>` : ''}</span>
        </div>`
     : '';
 
@@ -389,8 +475,8 @@ function buildQuestCard(quest, dungeon, chainPos, chainTotal) {
     </div>
     <div class="quest-card-body">
       <div class="quest-row">
-        <span class="quest-label">Start</span>
-        <span class="quest-value">${quest.startNpc || '—'}${quest.startLoc ? ` <span class="location">— ${quest.startLoc}</span>` : ''}</span>
+        <span class="quest-label">${quest.endNpc && quest.endNpc === quest.startNpc ? 'Start / Turn in' : 'Start'}</span>
+        <span class="quest-value">${startNpcHtml}${quest.startLoc ? ` <span class="location">— ${quest.startLoc}</span>` : ''}</span>
       </div>
       ${turninHtml}
       ${prequestHtml}
@@ -415,8 +501,26 @@ function buildQuestCard(quest, dungeon, chainPos, chainTotal) {
   const btn = card.querySelector('.complete-btn');
   btn.addEventListener('click', e => {
     e.stopPropagation();
-    completed[key] = !completed[key];
+    const wasCompleted = !!completed[key];
+    completed[key] = !wasCompleted;
     if (!completed[key]) delete completed[key];
+
+    if (quest.chainId !== null) {
+      if (!wasCompleted && quest.chainDepth > 0) {
+        // Completing: auto-complete all earlier members in the chain
+        dungeon.quests
+          .map(normalizeQuest)
+          .filter(q => q.chainId === quest.chainId && q.chainDepth < quest.chainDepth)
+          .forEach(q => { completed[dungeon.id + '::' + q.name] = true; });
+      } else if (wasCompleted) {
+        // Undoing: auto-undo all later members in the chain
+        dungeon.quests
+          .map(normalizeQuest)
+          .filter(q => q.chainId === quest.chainId && q.chainDepth > quest.chainDepth)
+          .forEach(q => { delete completed[dungeon.id + '::' + q.name]; });
+      }
+    }
+
     localStorage.setItem('wow_completed', JSON.stringify(completed));
     renderDungeonHeader(DUNGEONS.find(d => d.id === currentDungeonId));
     renderQuests();

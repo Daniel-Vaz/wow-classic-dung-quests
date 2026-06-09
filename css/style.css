@@ -344,6 +344,8 @@ body::before {
   transition: all 0.25s;
   cursor: pointer;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 .quest-card::before {
   content: '';
@@ -415,6 +417,7 @@ body::before {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1;
 }
 .quest-row {
   display: flex;
@@ -500,6 +503,17 @@ body::before {
   text-decoration-color: var(--gold-dim);
 }
 
+/* ── NPC NAME AS WOWHEAD LINK ── */
+.npc-link {
+  color: inherit;
+  text-decoration: none;
+}
+.npc-link:hover {
+  color: var(--gold-light);
+  text-decoration: underline;
+  text-decoration-color: var(--gold-dim);
+}
+
 /* ── ITEM QUALITY LINKS ── */
 .item-link {
   text-decoration: none;
@@ -553,12 +567,12 @@ body::before {
   grid-column: 1 / -1;       /* chain spans full grid width */
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 0;
+  gap: 10px;
 }
 .list-view .quest-chain-group {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 6px;
 }
 .chain-group-label {
   font-family: 'Cinzel', serif;
@@ -573,15 +587,11 @@ body::before {
 /* ── CHAINED QUEST CARD STYLE ── */
 .quest-card.chain-quest {
   border-left: 3px solid var(--gold-dim);
-  border-radius: 0;
+  border-radius: 4px;
 }
 .quest-card.chain-quest:first-of-type,
 .quest-chain-group .quest-card:nth-child(2) {  /* 2nd child because label is first */
-  border-radius: 3px 3px 0 0;
   border-left-color: var(--gold);
-}
-.quest-card.chain-quest:last-child {
-  border-radius: 0 0 3px 3px;
 }
 
 /* ── PREQUEST CHAIN LINK ── */
@@ -736,13 +746,28 @@ body::before {
 ::-webkit-scrollbar-thumb { background: var(--border-gold); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
 
-/* ── PREREQUISITE CHAIN BREADCRUMB (inside chain group) ── */
-.chain-prechain {
+/* ── PREREQUISITE / POSTCHAIN BREADCRUMB (inside chain group) ── */
+.chain-prechain,
+.chain-postchain {
   grid-column: 1 / -1;
-  padding: 2px 4px 10px;
+  padding: 4px 4px 10px;
 }
-.list-view .chain-prechain {
-  padding: 2px 14px 8px;
+.list-view .chain-prechain,
+.list-view .chain-postchain {
+  padding: 4px 14px 8px;
+}
+.chain-postchain {
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  margin-top: 2px;
+}
+.chain-context-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 5px;
 }
 .prechain-flow {
   display: flex;
@@ -765,6 +790,32 @@ body::before {
   color: var(--gold-light);
   border-color: var(--gold-dim);
   background: rgba(200,168,75,0.07);
+}
+/* Dungeon-quest prereq: was picked up by the guide page but is actually a prereq */
+.prechain-step.is-dungeon {
+  color: var(--gold-dim);
+  border-color: rgba(200,168,75,0.4);
+  background: rgba(200,168,75,0.05);
+}
+.prechain-step.is-dungeon::before {
+  content: '⚔ ';
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+.prechain-step.is-dungeon:hover {
+  color: var(--gold-light);
+  border-color: var(--gold);
+  background: rgba(200,168,75,0.1);
+}
+/* Post-chain steps have a slightly different hue */
+.prechain-step.postchain-step {
+  color: #809ab0;
+  border-color: rgba(128,154,176,0.3);
+}
+.prechain-step.postchain-step:hover {
+  color: #aac4d8;
+  border-color: rgba(128,154,176,0.6);
+  background: rgba(128,154,176,0.06);
 }
 .prechain-arrow {
   color: var(--text-dim);
