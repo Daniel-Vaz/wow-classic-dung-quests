@@ -488,6 +488,131 @@ body::before {
   color: var(--gold-dim);
 }
 
+/* ── QUEST NAME AS WOWHEAD LINK ── */
+.quest-name-link {
+  color: inherit;
+  text-decoration: none;
+}
+.quest-name-link:hover {
+  color: var(--gold-light);
+  text-decoration: underline;
+  text-decoration-color: var(--gold-dim);
+}
+
+/* ── ITEM QUALITY LINKS ── */
+.item-link {
+  text-decoration: none;
+  transition: opacity 0.15s;
+  font-weight: 600;
+}
+.item-link:hover { opacity: 0.8; text-decoration: underline; }
+.item-link.q0 { color: #9d9d9d; }
+.item-link.q1 { color: var(--white-common); }
+.item-link.q2 { color: var(--green-uncommon); }
+.item-link.q3 { color: var(--blue-rare); }
+.item-link.q4 { color: var(--purple-epic); }
+.item-link.q5 { color: var(--orange-legendary); }
+
+/* ── CHAIN BADGE ── */
+.chain-badge {
+  font-family: 'Cinzel', serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  color: var(--gold-dim);
+  background: rgba(200,168,75,0.08);
+  border: 1px solid var(--border-gold);
+  border-radius: 2px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── FACTION BADGE ── */
+.faction-badge {
+  font-family: 'Cinzel', serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  border-radius: 2px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.faction-badge.faction-horde  { color: #cc4444; border: 1px solid rgba(204,68,68,0.35); background: rgba(204,68,68,0.08); }
+.faction-badge.faction-alliance { color: #4488cc; border: 1px solid rgba(68,136,204,0.35); background: rgba(68,136,204,0.08); }
+
+/* ── QUEST CHAIN GROUP WRAPPER ── */
+.quest-chain-group {
+  border: 1px solid var(--gold-dim);
+  border-radius: 6px;
+  padding: 10px;
+  position: relative;
+  background: rgba(200,168,75,0.02);
+}
+.grid-view .quest-chain-group {
+  grid-column: 1 / -1;       /* chain spans full grid width */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 0;
+}
+.list-view .quest-chain-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.chain-group-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  padding: 0 4px 8px 4px;
+  grid-column: 1 / -1;
+}
+
+/* ── CHAINED QUEST CARD STYLE ── */
+.quest-card.chain-quest {
+  border-left: 3px solid var(--gold-dim);
+  border-radius: 0;
+}
+.quest-card.chain-quest:first-of-type,
+.quest-chain-group .quest-card:nth-child(2) {  /* 2nd child because label is first */
+  border-radius: 3px 3px 0 0;
+  border-left-color: var(--gold);
+}
+.quest-card.chain-quest:last-child {
+  border-radius: 0 0 3px 3px;
+}
+
+/* ── PREQUEST CHAIN LINK ── */
+.prequest-chain-link {
+  color: #d4a080;
+  text-decoration: none;
+  font-style: italic;
+}
+.prequest-chain-link:hover {
+  color: var(--gold-light);
+  text-decoration: underline;
+}
+
+/* ── GUIDE LINK IN DUNGEON HEADER ── */
+.guide-link {
+  font-family: 'Cinzel', serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  color: #4da6ff;
+  text-decoration: none;
+  border: 1px solid rgba(77,166,255,0.3);
+  border-radius: 2px;
+  padding: 2px 8px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.guide-link:hover {
+  color: #7fbfff;
+  border-color: #4da6ff;
+  background: rgba(77,166,255,0.06);
+}
+
 /* ── WOWHEAD LINK BUTTON ── */
 .wowhead-link-btn {
   font-family: 'Cinzel', serif;
@@ -609,6 +734,43 @@ body::before {
 ::-webkit-scrollbar-track { background: var(--bg-dark); }
 ::-webkit-scrollbar-thumb { background: var(--border-gold); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
+
+/* ── PREREQUISITE CHAIN BREADCRUMB (inside chain group) ── */
+.chain-prechain {
+  grid-column: 1 / -1;
+  padding: 2px 4px 10px;
+}
+.list-view .chain-prechain {
+  padding: 2px 14px 8px;
+}
+.prechain-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  line-height: 1.8;
+}
+.prechain-step {
+  color: #a08060;
+  text-decoration: none;
+  font-size: 0.78rem;
+  padding: 1px 7px;
+  border: 1px solid rgba(160,128,96,0.3);
+  border-radius: 2px;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.prechain-step:hover {
+  color: var(--gold-light);
+  border-color: var(--gold-dim);
+  background: rgba(200,168,75,0.07);
+}
+.prechain-arrow {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  opacity: 0.45;
+  flex-shrink: 0;
+}
 
 /* ── ANIMATIONS ── */
 @keyframes fadeInUp {

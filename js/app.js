@@ -9,6 +9,41 @@ let completed = JSON.parse(localStorage.getItem('wow_completed') || '{}');
 let locationFilter = null;
 
 // ═══════════════════════════════════════
+//  DATA NORMALISATION
+//  Supports both the old static format and the new scraped format
+// ═══════════════════════════════════════
+function normalizeQuest(q) {
+  // Rewards: new format is array of {id,name,url,quality}; old format is a string or items[]
+  let rewards = q.rewards;
+  if (!Array.isArray(rewards)) {
+    rewards = rewards ? [{ id: null, name: rewards, url: null, quality: 1 }] : [];
+  }
+
+  let rewardChoices = Array.isArray(q.rewardChoices) ? q.rewardChoices : [];
+
+  // Old "items" field: array of plain strings → convert to reward-objects (quality 2 default)
+  let legacyItems = [];
+  if (Array.isArray(q.items) && q.items.length > 0) {
+    legacyItems = q.items.map(name => ({ id: null, name, url: null, quality: 2 }));
+  }
+
+  return {
+    ...q,
+    rewards,
+    rewardChoices,
+    legacyItems,          // old items[] — merged into display if rewards is empty
+    prequest:      q.prequest      || '',
+    prequestLink:  q.prequestLink  || '',
+    chainId:       q.chainId       ?? null,
+    chainDepth:    q.chainDepth    ?? 0,
+    levels:        q.levels        || '',
+    minLevel:      q.minLevel      ?? null,
+    faction:       q.faction       || '',
+    preChain:      Array.isArray(q.preChain) ? q.preChain : [],
+  };
+}
+
+// ═══════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════
 function init() {
@@ -55,16 +90,24 @@ function selectDungeon(id) {
 function renderDungeonHeader(dungeon) {
   document.getElementById('dungeonHeaderIcon').textContent = dungeon.icon;
   document.getElementById('dungeonHeaderName').textContent = dungeon.name;
-  const completedCount = dungeon.quests.filter(q => completed[dungeon.id + '::' + q.name]).length;
-  document.getElementById('dungeonHeaderMeta').innerHTML = `
+
+  const quests = dungeon.quests.map(normalizeQuest);
+  const completedCount = quests.filter(q => completed[dungeon.id + '::' + q.name]).length;
+
+  let metaHtml = `
     <span class="dungeon-meta-item">LEVELS<strong>${dungeon.levels}</strong></span>
     <span class="dungeon-meta-item">FACTION<strong>${dungeon.faction}</strong></span>
     <span class="dungeon-meta-item">LOCATION<strong>${dungeon.location}</strong></span>
-    <span class="dungeon-meta-item">QUESTS<strong>${dungeon.quests.length}</strong></span>
+    <span class="dungeon-meta-item">QUESTS<strong>${quests.length}</strong></span>
   `;
-  const pct = dungeon.quests.length ? (completedCount / dungeon.quests.length * 100) : 0;
+  if (dungeon.guideUrl) {
+    metaHtml += `<a href="${dungeon.guideUrl}" target="_blank" rel="noopener noreferrer" class="guide-link">📖 Wowhead Guide</a>`;
+  }
+  document.getElementById('dungeonHeaderMeta').innerHTML = metaHtml;
+
+  const pct = quests.length ? (completedCount / quests.length * 100) : 0;
   document.getElementById('progressBar').style.width = pct + '%';
-  document.getElementById('progressFraction').textContent = `${completedCount} / ${dungeon.quests.length}`;
+  document.getElementById('progressFraction').textContent = `${completedCount} / ${quests.length}`;
   renderStatsBar(dungeon);
 }
 
@@ -72,13 +115,14 @@ function renderDungeonHeader(dungeon) {
 //  STATS BAR
 // ═══════════════════════════════════════
 function renderStatsBar(dungeon) {
-  const totalXP = dungeon.quests.reduce((s, q) => s + (q.xp || 0), 0);
-  const questsWithItems = dungeon.quests.filter(q => q.items.length > 0).length;
-  const questsWithRewards = dungeon.quests.filter(q => q.rewards).length;
-  const completedCount = dungeon.quests.filter(q => completed[dungeon.id + '::' + q.name]).length;
+  const quests = dungeon.quests.map(normalizeQuest);
+  const totalXP = quests.reduce((s, q) => s + (q.xp || 0), 0);
+  const withGear = quests.filter(q => q.rewards.length > 0 || q.rewardChoices.length > 0 || q.legacyItems.length > 0).length;
+  const completedCount = quests.filter(q => completed[dungeon.id + '::' + q.name]).length;
+
   document.getElementById('statsBar').innerHTML = `
     <div class="stat-item">
-      <div class="stat-num">${dungeon.quests.length}</div>
+      <div class="stat-num">${quests.length}</div>
       <div class="stat-label">Total Quests</div>
     </div>
     <div class="stat-divider"></div>
@@ -88,13 +132,8 @@ function renderStatsBar(dungeon) {
     </div>
     <div class="stat-divider"></div>
     <div class="stat-item">
-      <div class="stat-num" style="color:#c8a0d4">${questsWithItems}</div>
+      <div class="stat-num" style="color:#c8a0d4">${withGear}</div>
       <div class="stat-label">Gear Rewards</div>
-    </div>
-    <div class="stat-divider"></div>
-    <div class="stat-item">
-      <div class="stat-num" style="color:var(--green-uncommon)">${questsWithRewards}</div>
-      <div class="stat-label">Other Rewards</div>
     </div>
     <div class="stat-divider"></div>
     <div class="stat-item">
@@ -108,12 +147,14 @@ function renderStatsBar(dungeon) {
 //  SIDEBAR
 // ═══════════════════════════════════════
 function renderSidebar(dungeon) {
-  // Locations
-  const locs = [...new Set(dungeon.quests.map(q => q.startLoc.split(',')[0].trim()))];
+  const quests = dungeon.quests.map(normalizeQuest);
+
+  // By Location
+  const locs = [...new Set(quests.map(q => (q.startLoc || '').split(',')[0].trim()).filter(Boolean))];
   const locList = document.getElementById('locationList');
   locList.innerHTML = '';
   locs.forEach(loc => {
-    const count = dungeon.quests.filter(q => q.startLoc.startsWith(loc)).length;
+    const count = quests.filter(q => (q.startLoc || '').startsWith(loc)).length;
     const item = document.createElement('div');
     item.className = 'sidebar-item' + (locationFilter === loc ? ' active' : '');
     item.innerHTML = `<span>${loc}</span><span class="sidebar-item-count">${count}</span>`;
@@ -125,8 +166,8 @@ function renderSidebar(dungeon) {
     locList.appendChild(item);
   });
 
-  // Prequests
-  const pqs = dungeon.quests.filter(q => q.prequest);
+  // Prequest Chains
+  const pqs = quests.filter(q => q.prequest);
   const pqList = document.getElementById('prequestList');
   pqList.innerHTML = '';
   if (pqs.length === 0) {
@@ -135,8 +176,16 @@ function renderSidebar(dungeon) {
     pqs.forEach(q => {
       const item = document.createElement('div');
       item.className = 'sidebar-item';
-      item.innerHTML = `<span style="font-size:0.78rem;color:var(--text-main)">${q.name}</span>`;
-      item.title = `Requires: ${q.prequest}`;
+      const link = q.prequestLink
+        ? `<a href="${q.prequestLink}" target="_blank" rel="noopener noreferrer" class="prequest-chain-link">${q.prequest}</a>`
+        : q.prequest;
+      item.innerHTML = `
+        <span style="font-size:0.78rem;color:var(--text-main)">${q.name}</span>
+        <span style="font-size:0.72rem;color:var(--text-dim);margin-top:2px">req: ${link}</span>
+      `;
+      item.style.flexDirection = 'column';
+      item.style.alignItems = 'flex-start';
+      item.style.gap = '2px';
       pqList.appendChild(item);
     });
   }
@@ -151,30 +200,34 @@ function renderQuests() {
   const container = document.getElementById('quest-container');
   container.className = currentView === 'grid' ? 'grid-view' : 'list-view';
 
-  let quests = dungeon.quests.filter(q => {
+  let quests = dungeon.quests.map(normalizeQuest).filter(q => {
     const key = dungeon.id + '::' + q.name;
     const isComplete = !!completed[key];
-    if (currentFilter === 'has-items') return q.items.length > 0;
-    if (currentFilter === 'has-rewards') return !!q.rewards;
+    const hasGear = q.rewards.length > 0 || q.rewardChoices.length > 0 || q.legacyItems.length > 0;
+    if (currentFilter === 'has-items') return hasGear;
+    if (currentFilter === 'has-rewards') return hasGear;
     if (currentFilter === 'completed') return isComplete;
     if (currentFilter === 'incomplete') return !isComplete;
     return true;
   });
 
   if (locationFilter) {
-    quests = quests.filter(q => q.startLoc.startsWith(locationFilter));
+    quests = quests.filter(q => (q.startLoc || '').startsWith(locationFilter));
   }
 
   if (searchQuery) {
-    const q = searchQuery.toLowerCase();
+    const sq = searchQuery.toLowerCase();
     quests = quests.filter(quest =>
-      quest.name.toLowerCase().includes(q) ||
-      quest.startNpc.toLowerCase().includes(q) ||
-      quest.endNpc.toLowerCase().includes(q) ||
-      quest.startLoc.toLowerCase().includes(q) ||
-      quest.endLoc.toLowerCase().includes(q) ||
-      quest.items.some(i => i.toLowerCase().includes(q)) ||
-      quest.notes.toLowerCase().includes(q)
+      (quest.name || '').toLowerCase().includes(sq) ||
+      (quest.startNpc || '').toLowerCase().includes(sq) ||
+      (quest.endNpc || '').toLowerCase().includes(sq) ||
+      (quest.startLoc || '').toLowerCase().includes(sq) ||
+      (quest.endLoc || '').toLowerCase().includes(sq) ||
+      quest.rewards.some(r => r.name.toLowerCase().includes(sq)) ||
+      quest.rewardChoices.some(r => r.name.toLowerCase().includes(sq)) ||
+      quest.legacyItems.some(r => r.name.toLowerCase().includes(sq)) ||
+      (quest.notes || '').toLowerCase().includes(sq) ||
+      (quest.prequest || '').toLowerCase().includes(sq)
     );
   }
 
@@ -191,73 +244,196 @@ function renderQuests() {
     return;
   }
 
+  // Group quests so chain members render together with a wrapper
+  const rendered = new Set();
+  const byId = {};
+  quests.forEach(q => { if (q.id) byId[q.id] = q; });
+
   quests.forEach(quest => {
-    const key = dungeon.id + '::' + quest.name;
-    const isComplete = !!completed[key];
-    const card = document.createElement('div');
-    card.className = 'quest-card' + (isComplete ? ' completed' : '');
+    if (rendered.has(quest.name)) return;
 
-    const itemsHtml = quest.items.length
-      ? `<div class="quest-row"><span class="quest-label">Items</span><span class="quest-value items">${quest.items.join('<br>')}</span></div>`
-      : '';
-    const rewardHtml = quest.rewards
-      ? `<div class="quest-row"><span class="quest-label">Reward</span><span class="quest-value reward">${quest.rewards}</span></div>`
-      : '';
-    const prequestHtml = quest.prequest
-      ? `<div class="quest-row"><span class="quest-label">Req.</span><span class="quest-value prequest">${quest.prequest}</span></div>`
-      : '';
-    const notesHtml = quest.notes
-      ? `<div class="quest-row"><span class="quest-label">Note</span><span class="quest-value note">${quest.notes}</span></div>`
-      : '';
+    const cid = quest.chainId;
 
-    card.innerHTML = `
-      <div class="quest-card-header">
-        <div class="quest-checkbox">${isComplete ? '✓' : ''}</div>
-        <div class="quest-name">${quest.name}</div>
-        ${quest.levels ? `<div class="quest-level-badge">Lv ${quest.levels}</div>` : ''}
-      </div>
-      <div class="quest-card-body">
-        <div class="quest-row">
-          <span class="quest-label">Start</span>
-          <span class="quest-value">${quest.startNpc} <span class="location">— ${quest.startLoc}</span></span>
-        </div>
-        ${quest.endNpc !== quest.startNpc ? `
-        <div class="quest-row">
-          <span class="quest-label">Turn in</span>
-          <span class="quest-value">${quest.endNpc} <span class="location">— ${quest.endLoc}</span></span>
-        </div>` : ''}
-        ${prequestHtml}
-        ${itemsHtml}
-        ${rewardHtml}
-        ${notesHtml}
-      </div>
-      <div class="quest-card-footer">
-        ${quest.xp ? `<div class="xp-pill">⭐ ${quest.xp.toLocaleString()} XP</div>` : ''}
-        ${quest.rewards ? `<div class="reward-pill">🎁 ${quest.rewards}</div>` : ''}
-        ${quest.questLink ? `<a href="${quest.questLink}" target="_blank" rel="noopener noreferrer" class="wowhead-link-btn" title="View on Wowhead">🔗 Wowhead</a>` : ''}
-        <button class="complete-btn" data-key="${key}">${isComplete ? '↩ Undo' : '✓ Complete'}</button>
-      </div>
-    `;
+    if (cid !== null && quest.chainDepth === 0) {
+      const chainMembers = quests.filter(q => q.chainId === cid);
+      // Only wrap when there are multiple dungeon quests OR external prerequisites
+      const rootPrechain = quest.preChain || [];
+      const isGroup = chainMembers.length > 1 || rootPrechain.length > 0;
 
-    // Toggle expand in list view
-    card.addEventListener('click', (e) => {
-      if (e.target.classList.contains('complete-btn')) return;
-      if (currentView === 'list') card.classList.toggle('expanded');
-    });
+      if (isGroup) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'quest-chain-group';
 
-    // Complete button
-    const btn = card.querySelector('.complete-btn');
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      completed[key] = !completed[key];
-      if (!completed[key]) delete completed[key];
-      localStorage.setItem('wow_completed', JSON.stringify(completed));
-      renderDungeonHeader(dungeon);
-      renderQuests();
-    });
+        const label = document.createElement('div');
+        label.className = 'chain-group-label';
+        label.textContent = chainMembers.length > 1
+          ? `Quest Chain  (${chainMembers.length} parts)`
+          : 'Quest Chain';
+        wrapper.appendChild(label);
 
-    container.appendChild(card);
+        if (rootPrechain.length > 0) {
+          wrapper.appendChild(buildPrechainBreadcrumb(rootPrechain));
+        }
+
+        chainMembers.forEach((cq, idx) => {
+          rendered.add(cq.name);
+          const card = buildQuestCard(cq, dungeon, idx, chainMembers.length);
+          wrapper.appendChild(card);
+        });
+
+        container.appendChild(wrapper);
+        return;
+      }
+    }
+
+    if (!rendered.has(quest.name)) {
+      rendered.add(quest.name);
+      container.appendChild(buildQuestCard(quest, dungeon, null, null));
+    }
   });
+}
+
+// ═══════════════════════════════════════
+//  PRECHAIN BREADCRUMB
+// ═══════════════════════════════════════
+function buildPrechainBreadcrumb(preChain) {
+  const el = document.createElement('div');
+  el.className = 'chain-prechain';
+  const steps = preChain.map(s =>
+    `<a href="${s.url}" target="_blank" rel="noopener noreferrer" class="prechain-step">${s.name}</a>`
+  ).join('<span class="prechain-arrow">›</span>');
+  el.innerHTML = `<div class="prechain-flow">${steps}<span class="prechain-arrow">›</span></div>`;
+  return el;
+}
+
+// ═══════════════════════════════════════
+//  BUILD QUEST CARD
+// ═══════════════════════════════════════
+function buildQuestCard(quest, dungeon, chainPos, chainTotal) {
+  const key = dungeon.id + '::' + quest.name;
+  const isComplete = !!completed[key];
+  const card = document.createElement('div');
+
+  const chainClass = quest.chainId !== null ? ' chain-quest' : '';
+  card.className = 'quest-card' + chainClass + (isComplete ? ' completed' : '');
+
+  if (quest.chainId !== null) {
+    card.dataset.chainId = quest.chainId;
+  }
+
+  // ---- Chain badge ----
+  let chainBadgeHtml = '';
+  if (chainPos !== null && chainTotal !== null) {
+    chainBadgeHtml = `<div class="chain-badge">PART ${chainPos + 1}/${chainTotal}</div>`;
+  }
+
+  // ---- Prequest row ----
+  let prequestHtml = '';
+  if (quest.prequest) {
+    const link = quest.prequestLink
+      ? `<a href="${quest.prequestLink}" target="_blank" rel="noopener noreferrer" class="prequest-chain-link">${quest.prequest}</a>`
+      : quest.prequest;
+    prequestHtml = `<div class="quest-row"><span class="quest-label">Req.</span><span class="quest-value prequest">${link}</span></div>`;
+  }
+
+  // ---- Rewards (always-give) ----
+  const rewardItems = quest.rewards.length > 0 ? quest.rewards : quest.legacyItems;
+  let itemsHtml = '';
+  if (rewardItems.length > 0) {
+    const links = rewardItems.map(r => buildItemLink(r)).join('<br>');
+    itemsHtml = `<div class="quest-row"><span class="quest-label">Reward</span><span class="quest-value items">${links}</span></div>`;
+  }
+
+  // ---- Choice rewards ----
+  let choiceHtml = '';
+  if (quest.rewardChoices.length > 0) {
+    const links = quest.rewardChoices.map(r => buildItemLink(r)).join('<br>');
+    choiceHtml = `<div class="quest-row"><span class="quest-label">Choice</span><span class="quest-value items">${links}</span></div>`;
+  }
+
+  // ---- Notes ----
+  const notesHtml = quest.notes
+    ? `<div class="quest-row"><span class="quest-label">Note</span><span class="quest-value note">${quest.notes}</span></div>`
+    : '';
+
+
+  // ---- Quest level badge ----
+  const levelNum = quest.minLevel || (quest.levels ? parseInt(quest.levels) : 0);
+  const levelText = levelNum ? `ReqLvl ${levelNum}` : '';
+
+  // ---- Faction badge (quest-level, if different from dungeon) ----
+  const showFaction = quest.faction && quest.faction !== 'Both' && quest.faction !== dungeon.faction;
+  const factionBadgeHtml = showFaction
+    ? `<div class="faction-badge faction-${quest.faction.toLowerCase()}">${quest.faction}</div>`
+    : '';
+
+  // ---- Turn-in row ----
+  const turninHtml = quest.endNpc && quest.endNpc !== quest.startNpc
+    ? `<div class="quest-row">
+        <span class="quest-label">Turn in</span>
+        <span class="quest-value">${quest.endNpc}${quest.endLoc ? ` <span class="location">— ${quest.endLoc}</span>` : ''}</span>
+       </div>`
+    : '';
+
+  card.innerHTML = `
+    <div class="quest-card-header">
+      <div class="quest-checkbox">${isComplete ? '✓' : ''}</div>
+      <div class="quest-name">
+        ${quest.questLink
+          ? `<a href="${quest.questLink}" target="_blank" rel="noopener noreferrer" class="quest-name-link">${quest.name}</a>`
+          : quest.name}
+      </div>
+      ${chainBadgeHtml}
+      ${factionBadgeHtml}
+      ${levelText ? `<div class="quest-level-badge">${levelText}</div>` : ''}
+    </div>
+    <div class="quest-card-body">
+      <div class="quest-row">
+        <span class="quest-label">Start</span>
+        <span class="quest-value">${quest.startNpc || '—'}${quest.startLoc ? ` <span class="location">— ${quest.startLoc}</span>` : ''}</span>
+      </div>
+      ${turninHtml}
+      ${prequestHtml}
+      ${itemsHtml}
+      ${choiceHtml}
+      ${notesHtml}
+    </div>
+    <div class="quest-card-footer">
+      ${quest.xp ? `<div class="xp-pill">⭐ ${quest.xp.toLocaleString()} XP</div>` : ''}
+      <button class="complete-btn" data-key="${key}">${isComplete ? '↩ Undo' : '✓ Complete'}</button>
+    </div>
+  `;
+
+  // Toggle expand in list view
+  card.addEventListener('click', e => {
+    if (e.target.classList.contains('complete-btn')) return;
+    if (e.target.tagName === 'A') return;
+    if (currentView === 'list') card.classList.toggle('expanded');
+  });
+
+  // Complete button
+  const btn = card.querySelector('.complete-btn');
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    completed[key] = !completed[key];
+    if (!completed[key]) delete completed[key];
+    localStorage.setItem('wow_completed', JSON.stringify(completed));
+    renderDungeonHeader(DUNGEONS.find(d => d.id === currentDungeonId));
+    renderQuests();
+  });
+
+  return card;
+}
+
+// ═══════════════════════════════════════
+//  ITEM LINK BUILDER
+// ═══════════════════════════════════════
+function buildItemLink(item) {
+  const qClass = `q${Math.min(item.quality || 1, 5)}`;
+  if (item.url) {
+    return `<a href="${item.url}" target="_blank" rel="noopener noreferrer" class="item-link ${qClass}">${item.name}</a>`;
+  }
+  return `<span class="item-link ${qClass}">${item.name}</span>`;
 }
 
 // ═══════════════════════════════════════
@@ -266,12 +442,12 @@ function renderQuests() {
 function buildFilterBtns() {}
 
 function bindControls() {
-  document.getElementById('searchInput').addEventListener('input', (e) => {
+  document.getElementById('searchInput').addEventListener('input', e => {
     searchQuery = e.target.value.trim();
     renderQuests();
   });
 
-  document.getElementById('filterGroup').addEventListener('click', (e) => {
+  document.getElementById('filterGroup').addEventListener('click', e => {
     const btn = e.target.closest('.filter-btn');
     if (!btn) return;
     currentFilter = btn.dataset.filter;
