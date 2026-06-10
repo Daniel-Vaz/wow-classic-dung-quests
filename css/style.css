@@ -889,8 +889,48 @@ body::before {
 .content { flex: 1; min-width: 0; }
 
 @media (max-width: 900px) {
-  .sidebar { display: none; }
-  .layout { display: block; }
+  .layout {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .sidebar-section {
+    flex: 1;
+    min-width: 220px;
+  }
+  .sidebar-title {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .sidebar-title::after {
+    content: '▼';
+    font-size: 0.55rem;
+    opacity: 0.5;
+    transition: transform 0.2s;
+  }
+  .sidebar-section.expanded .sidebar-title::after {
+    transform: rotate(180deg);
+  }
+  .sidebar-body {
+    display: none;
+    overflow-y: auto;
+    max-height: 240px;
+  }
+  .sidebar-section.expanded .sidebar-body {
+    display: block;
+  }
+}
+@media (max-width: 768px) {
+  .dungeon-tabs {
+    justify-content: flex-start;
+  }
 }
 @media (max-width: 600px) {
   #quest-container.grid-view {

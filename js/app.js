@@ -54,6 +54,7 @@ function init() {
   buildDungeonTabs();
   buildFilterBtns();
   bindControls();
+  initSidebarCollapse();
   selectDungeon('rfc');
 }
 
@@ -237,6 +238,13 @@ function renderQuests() {
       (quest.prequest || '').toLowerCase().includes(sq)
     );
   }
+
+  // Isolated quests (no chain) first, then quest chains
+  quests.sort((a, b) => {
+    const aIsolated = a.chainId === null ? 0 : 1;
+    const bIsolated = b.chainId === null ? 0 : 1;
+    return aIsolated - bIsolated;
+  });
 
   document.getElementById('visibleCount').textContent = quests.length;
   container.innerHTML = '';
@@ -543,6 +551,14 @@ function buildItemLink(item) {
 // ═══════════════════════════════════════
 //  CONTROLS
 // ═══════════════════════════════════════
+function initSidebarCollapse() {
+  document.querySelectorAll('.sidebar-title').forEach(title => {
+    title.addEventListener('click', () => {
+      title.closest('.sidebar-section').classList.toggle('expanded');
+    });
+  });
+}
+
 function buildFilterBtns() {}
 
 function bindControls() {
