@@ -465,6 +465,12 @@ body::before {
   justify-content: space-between;
   gap: 8px;
 }
+.footer-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
 .xp-pill {
   font-family: 'Cinzel', serif;
   font-size: 0.7rem;
@@ -475,6 +481,18 @@ body::before {
   padding: 2px 8px;
   letter-spacing: 0.05em;
 }
+.money-pill {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  background: rgba(255,209,0,0.07);
+  border: 1px solid rgba(255,209,0,0.22);
+  border-radius: 2px;
+  padding: 2px 8px;
+  letter-spacing: 0.04em;
+}
+.money-gold   { color: #ffd100; }
+.money-silver { color: #c0c0c0; }
+.money-copper { color: #cd7f32; }
 .reward-pill {
   font-family: 'Cinzel', serif;
   font-size: 0.7rem;

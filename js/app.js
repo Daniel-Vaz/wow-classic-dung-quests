@@ -45,7 +45,19 @@ function normalizeQuest(q) {
     preChain:       Array.isArray(q.preChain)  ? q.preChain  : [],
     postChain:      Array.isArray(q.postChain) ? q.postChain : [],
     absorbedBy:     q.absorbedBy     ?? null,
+    money:          q.money          || 0,
   };
+}
+
+function formatMoney(copper) {
+  const g = Math.floor(copper / 10000);
+  const s = Math.floor((copper % 10000) / 100);
+  const c = copper % 100;
+  const parts = [];
+  if (g) parts.push(`<span class="money-gold">${g}g</span>`);
+  if (s) parts.push(`<span class="money-silver">${s}s</span>`);
+  if (c || !parts.length) parts.push(`<span class="money-copper">${c}c</span>`);
+  return parts.join(' ');
 }
 
 // ═══════════════════════════════════════
@@ -498,7 +510,10 @@ function buildQuestCard(quest, dungeon, chainPos, chainTotal) {
       ${notesHtml}
     </div>
     <div class="quest-card-footer">
-      ${quest.xp ? `<div class="xp-pill">⭐ ${quest.xp.toLocaleString()} XP</div>` : ''}
+      <div class="footer-pills">
+        ${quest.xp ? `<div class="xp-pill">⭐ ${quest.xp.toLocaleString()} XP</div>` : ''}
+        ${quest.money ? `<div class="money-pill">${formatMoney(quest.money)}</div>` : ''}
+      </div>
       <button class="complete-btn" data-key="${key}">${isComplete ? '↩ Undo' : '✓ Complete'}</button>
     </div>
   `;
