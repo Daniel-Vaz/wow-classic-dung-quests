@@ -116,7 +116,10 @@ function renderDungeonHeader(dungeon) {
   document.getElementById('dungeonHeaderName').textContent = dungeon.name;
 
   // Exclude absorbed quests from all header counts — they're shown as chain context
-  const quests = dungeon.quests.map(normalizeQuest).filter(q => q.absorbedBy === null);
+  let quests = dungeon.quests.map(normalizeQuest).filter(q => q.absorbedBy === null);
+  if (factionFilter) {
+    quests = quests.filter(q => !q.faction || q.faction === 'Both' || q.faction === factionFilter);
+  }
   const completedCount = quests.filter(q => completed[dungeon.id + '::' + q.name]).length;
 
   let metaHtml = `
@@ -140,7 +143,10 @@ function renderDungeonHeader(dungeon) {
 //  STATS BAR
 // ═══════════════════════════════════════
 function renderStatsBar(dungeon) {
-  const quests = dungeon.quests.map(normalizeQuest).filter(q => q.absorbedBy === null);
+  let quests = dungeon.quests.map(normalizeQuest).filter(q => q.absorbedBy === null);
+  if (factionFilter) {
+    quests = quests.filter(q => !q.faction || q.faction === 'Both' || q.faction === factionFilter);
+  }
   const totalXP = quests.reduce((s, q) => s + (q.xp || 0), 0);
   const withGear = quests.filter(q => q.rewards.length > 0 || q.rewardChoices.length > 0 || q.legacyItems.length > 0).length;
   const completedCount = quests.filter(q => completed[dungeon.id + '::' + q.name]).length;
@@ -627,6 +633,8 @@ function bindControls() {
     document.querySelectorAll('.faction-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     updateDungeonTabsVisibility();
+    const cur = DUNGEONS.find(d => d.id === currentDungeonId);
+    if (cur) renderDungeonHeader(cur);
     renderQuests();
   });
 
