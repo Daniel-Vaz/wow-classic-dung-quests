@@ -1,4 +1,40 @@
 // ═══════════════════════════════════════
+//  WOWHEAD STRATEGY GUIDE URLS
+// ═══════════════════════════════════════
+const STRATEGY_URLS = {
+  rfc:       [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/ragefire-chasm-dungeon-strategy-wow-classic' }],
+  wc:        [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/wailing-caverns-dungeon-strategy-wow-classic' }],
+  deadmines: [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/deadmines-dungeon-strategy-wow-classic' }],
+  sfk:       [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/shadowfang-keep-dungeon-strategy-wow-classic' }],
+  stockades: [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/the-stockade-dungeon-strategy-wow-classic' }],
+  bfd:       [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/blackfathom-deeps-dungeon-strategy-wow-classic' }],
+  gnomer:    [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/gnomeregan-dungeon-strategy-wow-classic' }],
+  rfk:       [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/razorfen-kraul-dungeon-strategy-wow-classic' }],
+  sm:        [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/scarlet-monastery-dungeon-strategy-wow-classic' }],
+  rfd:       [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/razorfen-downs-dungeon-strategy-wow-classic' }],
+  uldaman:   [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/uldaman-dungeon-strategy-wow-classic' }],
+  zf:        [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/zulfarrak-dungeon-strategy-wow-classic' }],
+  mara:      [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/maraudon-dungeon-strategy-wow-classic' }],
+  st:        [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/temple-of-atalhakkar-sunken-temple-dungeon-strategy-wow-classic' }],
+  brd:       [
+    { label: 'Detention Block',  url: 'https://www.wowhead.com/classic/guide/blackrock-depths-detention-block-dungeon-strategy-wow-classic' },
+    { label: 'Shadowforge City', url: 'https://www.wowhead.com/classic/guide/blackrock-depths-shadowforge-city-dungeon-strategy-wow-classic' },
+  ],
+  lbrs:      [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/lower-blackrock-spire-lbrs-dungeon-strategy-wow-classic' }],
+  ubrs:      [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/upper-blackrock-spire-ubrs-dungeon-strategy-wow-classic' }],
+  dm:        [
+    { label: 'East Wing',  url: 'https://www.wowhead.com/classic/guide/dire-maul-east-dungeon-strategy-wow-classic' },
+    { label: 'West Wing',  url: 'https://www.wowhead.com/classic/guide/dire-maul-west-dungeon-strategy-wow-classic' },
+    { label: 'North Wing', url: 'https://www.wowhead.com/classic/guide/dire-maul-north-dungeon-strategy-wow-classic' },
+  ],
+  scholo:    [{ label: 'Strategy Guide', url: 'https://www.wowhead.com/classic/guide/scholomance-dungeon-strategy-wow-classic' }],
+  strath:    [
+    { label: 'Live Side',   url: 'https://www.wowhead.com/classic/guide/stratholme-live-dungeon-strategy-wow-classic' },
+    { label: 'Undead Side', url: 'https://www.wowhead.com/classic/guide/stratholme-undead-dungeon-strategy-wow-classic' },
+  ],
+};
+
+// ═══════════════════════════════════════
 //  ZONE MAP IDS  (Wowhead area table IDs)
 // ═══════════════════════════════════════
 const ZONE_IDS = {
@@ -180,10 +216,25 @@ function renderDungeonHeader(dungeon) {
     <span class="dungeon-meta-item">LOCATION<strong>${locLinkHtml}</strong></span>
     <span class="dungeon-meta-item">QUESTS<strong>${quests.length}</strong></span>
   `;
-  if (dungeon.guideUrl) {
-    metaHtml += `<a href="${dungeon.guideUrl}" target="_blank" rel="noopener noreferrer" class="guide-link">📖 Wowhead Guide</a>`;
-  }
   document.getElementById('dungeonHeaderMeta').innerHTML = metaHtml;
+
+  const strategyEntries = STRATEGY_URLS[dungeon.id] || [];
+  const guidesEl = document.getElementById('dungeonHeaderGuides');
+  if (dungeon.guideUrl || strategyEntries.length > 0) {
+    const questLinkHtml = dungeon.guideUrl
+      ? `<a href="${dungeon.guideUrl}" target="_blank" rel="noopener noreferrer" class="guides-box-link">📖 Quest Guide</a>`
+      : '';
+    const strategyLinksHtml = strategyEntries
+      .map(e => `<a href="${e.url}" target="_blank" rel="noopener noreferrer" class="guides-box-link">⚔ ${e.label}</a>`)
+      .join('');
+    guidesEl.innerHTML = `
+      <div class="guides-box">
+        <div class="guides-box-label">Wowhead Guides</div>
+        <div class="guides-box-links">${questLinkHtml}${strategyLinksHtml}</div>
+      </div>`;
+  } else {
+    guidesEl.innerHTML = '';
+  }
 
   const pct = quests.length ? (completedCount / quests.length * 100) : 0;
   document.getElementById('progressBar').style.width = pct + '%';
