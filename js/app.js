@@ -1,4 +1,49 @@
 // ═══════════════════════════════════════
+//  ZONE MAP IDS  (Wowhead area table IDs)
+// ═══════════════════════════════════════
+const ZONE_IDS = {
+  // Capital cities
+  'Orgrimmar': 1637, 'Thunder Bluff': 1638, 'Undercity': 1497,
+  'Darnassus': 1657, 'Ironforge': 1537, 'Stormwind City': 1519,
+  // Kalimdor
+  'Durotar': 1411, 'The Barrens': 17, 'Mulgore': 215,
+  'Darkshore': 148, 'Ashenvale': 331, 'Stonetalon Mountains': 406,
+  'Desolace': 405, 'Feralas': 357, 'Dustwallow Marsh': 15,
+  'Thousand Needles': 400, 'Tanaris': 440, "Un'Goro Crater": 490,
+  'Azshara': 16, 'Felwood': 361, 'Winterspring': 618,
+  'Moonglade': 493, 'Silithus': 1377,
+  // Eastern Kingdoms
+  'Dun Morogh': 1, 'Loch Modan': 38, 'Wetlands': 11,
+  'Arathi Highlands': 45, 'The Hinterlands': 47,
+  'Western Plaguelands': 28, 'Eastern Plaguelands': 139,
+  'Tirisfal Glades': 85, 'Silverpine Forest': 130,
+  'Hillsbrad Foothills': 267, 'Alterac Mountains': 36,
+  'Elwynn Forest': 12, 'Westfall': 40, 'Redridge Mountains': 44,
+  'Duskwood': 10, 'Stranglethorn Vale': 33, 'Swamp of Sorrows': 8,
+  'Badlands': 3, 'Searing Gorge': 51, 'Burning Steppes': 46,
+  'Blasted Lands': 4,
+  // Dungeons – Kalimdor
+  'Ragefire Chasm': 2437, 'Wailing Caverns': 718,
+  'Blackfathom Deeps': 719, 'Razorfen Kraul': 1462,
+  'Razorfen Downs': 1463, "Zul'Farrak": 1176,
+  'Maraudon': 2100, "The Temple of Atal'Hakkar": 1477,
+  'Dire Maul': 2557,
+  // Dungeons – Eastern Kingdoms
+  'The Deadmines': 1581, 'Shadowfang Keep': 209,
+  'The Stockade': 717, 'Gnomeregan': 721,
+  'Scarlet Monastery': 796, 'Uldaman': 1337,
+  'Blackrock Depths': 1584, 'Blackrock Spire': 1583,
+  'Blackrock Mountain': 1265, 'Scholomance': 2057,
+  'Stratholme': 2017,
+};
+
+function buildLocationLink(name) {
+  if (!name) return '';
+  if (!ZONE_IDS[name]) return name;
+  return `<span class="location-link" data-location="${name}" title="View map">${name}</span>`;
+}
+
+// ═══════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════
 let currentDungeonId = 'rfc';
@@ -77,6 +122,7 @@ function init() {
   buildFilterBtns();
   bindControls();
   initSidebarCollapse();
+  initMapModal();
   selectDungeon('rfc');
 }
 
@@ -125,10 +171,13 @@ function renderDungeonHeader(dungeon) {
   }
   const completedCount = quests.filter(q => completed[dungeon.id + '::' + q.name]).length;
 
+  const locLinkHtml = ZONE_IDS[dungeon.location]
+    ? `<span class="location-link" data-location="${dungeon.location}" title="View map">${dungeon.location}</span>`
+    : dungeon.location;
   let metaHtml = `
     <span class="dungeon-meta-item">LEVELS<strong>${dungeon.levels}</strong></span>
     <span class="dungeon-meta-item">FACTION<strong>${dungeon.faction}</strong></span>
-    <span class="dungeon-meta-item">LOCATION<strong>${dungeon.location}</strong></span>
+    <span class="dungeon-meta-item">LOCATION<strong>${locLinkHtml}</strong></span>
     <span class="dungeon-meta-item">QUESTS<strong>${quests.length}</strong></span>
   `;
   if (dungeon.guideUrl) {
@@ -218,7 +267,6 @@ function renderQuests() {
     const isComplete = !!completed[key];
     const hasGear = q.rewards.length > 0 || q.rewardChoices.length > 0 || q.legacyItems.length > 0;
     if (currentFilter === 'has-items') return hasGear;
-    if (currentFilter === 'has-rewards') return hasGear;
     if (currentFilter === 'completed') return isComplete;
     if (currentFilter === 'incomplete') return !isComplete;
     return true;
@@ -499,7 +547,7 @@ function buildQuestCard(quest, dungeon, chainPos, chainTotal) {
   const turninHtml = endEntity && endEntity !== startEntity
     ? `<div class="quest-row">
         <span class="quest-label">Turn in</span>
-        <span class="quest-value">${endNpcHtml}${quest.endLoc ? ` <span class="location">— ${quest.endLoc}</span>` : ''}</span>
+        <span class="quest-value">${endNpcHtml}${quest.endLoc ? ` <span class="location">— ${buildLocationLink(quest.endLoc)}</span>` : ''}</span>
        </div>`
     : '';
 
@@ -518,7 +566,7 @@ function buildQuestCard(quest, dungeon, chainPos, chainTotal) {
     <div class="quest-card-body">
       <div class="quest-row">
         <span class="quest-label">${endEntity && endEntity === startEntity ? 'Start / Turn in' : 'Start'}</span>
-        <span class="quest-value">${startNpcHtml}${quest.startLoc ? ` <span class="location">— ${quest.startLoc}</span>` : ''}</span>
+        <span class="quest-value">${startNpcHtml}${quest.startLoc ? ` <span class="location">— ${buildLocationLink(quest.startLoc)}</span>` : ''}</span>
       </div>
       ${turninHtml}
       ${itemsHtml}
@@ -649,6 +697,153 @@ function bindControls() {
     document.getElementById('listViewBtn').classList.add('active');
     document.getElementById('gridViewBtn').classList.remove('active');
     renderQuests();
+  });
+}
+
+// ═══════════════════════════════════════
+//  MAP MODAL
+// ═══════════════════════════════════════
+let mapScale = 1, mapX = 0, mapY = 0;
+let mapDragging = false, mapDragStartX = 0, mapDragStartY = 0;
+let mapNaturalW = 0, mapNaturalH = 0;
+
+function applyMapTransform() {
+  document.getElementById('mapModalImg').style.transform =
+    `translate(${mapX}px, ${mapY}px) scale(${mapScale})`;
+}
+
+function resetMapView() {
+  const img = document.getElementById('mapModalImg');
+  const vp  = document.getElementById('mapModalViewport');
+  const vpW = vp.clientWidth, vpH = vp.clientHeight;
+  // Fit the image inside the viewport at scale 1
+  const scaleW = mapNaturalW > 0 ? vpW / mapNaturalW : 1;
+  const scaleH = mapNaturalH > 0 ? vpH / mapNaturalH : 1;
+  mapScale = Math.min(scaleW, scaleH, 1);
+  // Centre it
+  mapX = (vpW - mapNaturalW * mapScale) / 2;
+  mapY = (vpH - mapNaturalH * mapScale) / 2;
+  applyMapTransform();
+}
+
+function openMapModal(locationName) {
+  const zoneId = ZONE_IDS[locationName];
+  if (!zoneId) return;
+
+  const imgUrl      = `https://wow.zamimg.com/images/wow/classic/maps/enus/zoom/${zoneId}.jpg`;
+  const wowheadUrl  = `https://www.wowhead.com/classic/zone=${zoneId}`;
+  const img         = document.getElementById('mapModalImg');
+  const noImg       = document.getElementById('mapNoImage');
+
+  document.getElementById('mapModalTitle').textContent = locationName;
+  document.getElementById('mapModalWowheadLink').href  = wowheadUrl;
+
+  img.classList.add('loading');
+  noImg.classList.remove('visible');
+  img.style.display = 'block';
+  img.src = '';
+
+  mapNaturalW = 0; mapNaturalH = 0;
+
+  // Open the modal first so the viewport has real dimensions when onload fires
+  document.getElementById('mapModal').setAttribute('aria-hidden', 'false');
+  document.getElementById('mapModal').classList.add('open');
+
+  img.onload = () => {
+    mapNaturalW = img.naturalWidth;
+    mapNaturalH = img.naturalHeight;
+    img.classList.remove('loading');
+    resetMapView();
+  };
+  img.onerror = () => {
+    img.style.display = 'none';
+    noImg.classList.add('visible');
+  };
+  img.src = imgUrl;
+}
+
+function closeMapModal() {
+  document.getElementById('mapModal').classList.remove('open');
+  document.getElementById('mapModal').setAttribute('aria-hidden', 'true');
+  document.getElementById('mapModalImg').src = '';
+}
+
+function initMapModal() {
+  const modal   = document.getElementById('mapModal');
+  const vp      = document.getElementById('mapModalViewport');
+  const img     = document.getElementById('mapModalImg');
+
+  document.getElementById('mapModalClose').addEventListener('click', closeMapModal);
+  document.querySelector('.map-modal-backdrop').addEventListener('click', closeMapModal);
+
+  // Zoom buttons
+  document.getElementById('mapZoomIn').addEventListener('click', () => {
+    mapScale = Math.min(mapScale * 1.3, 6);
+    applyMapTransform();
+  });
+  document.getElementById('mapZoomOut').addEventListener('click', () => {
+    mapScale = Math.max(mapScale / 1.3, 0.15);
+    applyMapTransform();
+  });
+  document.getElementById('mapZoomReset').addEventListener('click', resetMapView);
+
+  // Scroll-wheel zoom toward cursor
+  vp.addEventListener('wheel', e => {
+    e.preventDefault();
+    const rect    = vp.getBoundingClientRect();
+    const mouseX  = e.clientX - rect.left;
+    const mouseY  = e.clientY - rect.top;
+    const factor  = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    const newScale = Math.max(0.15, Math.min(6, mapScale * factor));
+    mapX = mouseX - (mouseX - mapX) * (newScale / mapScale);
+    mapY = mouseY - (mouseY - mapY) * (newScale / mapScale);
+    mapScale = newScale;
+    applyMapTransform();
+  }, { passive: false });
+
+  // Mouse drag
+  vp.addEventListener('mousedown', e => {
+    mapDragging = true;
+    mapDragStartX = e.clientX - mapX;
+    mapDragStartY = e.clientY - mapY;
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', e => {
+    if (!mapDragging) return;
+    mapX = e.clientX - mapDragStartX;
+    mapY = e.clientY - mapDragStartY;
+    applyMapTransform();
+  });
+  window.addEventListener('mouseup', () => { mapDragging = false; });
+
+  // Touch drag
+  let lastTouchX = 0, lastTouchY = 0;
+  vp.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+      lastTouchX = e.touches[0].clientX;
+      lastTouchY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+  vp.addEventListener('touchmove', e => {
+    if (e.touches.length === 1) {
+      mapX += e.touches[0].clientX - lastTouchX;
+      mapY += e.touches[0].clientY - lastTouchY;
+      lastTouchX = e.touches[0].clientX;
+      lastTouchY = e.touches[0].clientY;
+      applyMapTransform();
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  // ESC key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modal.classList.contains('open')) closeMapModal();
+  });
+
+  // Location link delegation (document-level — quest cards rebuild dynamically)
+  document.addEventListener('click', e => {
+    const link = e.target.closest('.location-link');
+    if (link) openMapModal(link.dataset.location);
   });
 }
 

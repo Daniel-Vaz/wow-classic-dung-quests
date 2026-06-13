@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>WoW Classic — Dungeon Quest Compendium</title>
+  <title>WoW Classic — Dungeons Compendium</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
@@ -13,8 +13,8 @@
 
 <header class="site-header">
   <div class="header-emblem">⚔️</div>
-  <h1 class="site-title">WoW Classic Dungeon Quest<br>Compendium</h1>
-  <p class="site-subtitle">Classic World of Warcraft · All Instances · All Quests</p>
+  <h1 class="site-title">WoW Classic Dungeons<br>Compendium</h1>
+  <p class="site-subtitle">All Instances · All Quests · All the Information</p>
   <div class="header-divider">
     <div class="header-divider-icon">✦</div>
   </div>
@@ -28,7 +28,6 @@
   <div class="filter-group" id="filterGroup">
     <button class="filter-btn active" data-filter="all">All</button>
     <button class="filter-btn" data-filter="has-items">Has Gear</button>
-    <button class="filter-btn" data-filter="has-rewards">Has Rewards</button>
     <button class="filter-btn" data-filter="completed">Completed</button>
     <button class="filter-btn" data-filter="incomplete">Incomplete</button>
   </div>
@@ -70,6 +69,27 @@
       </div>
       <div class="stats-bar" id="statsBar"></div>
       <div id="quest-container" class="grid-view"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Map Modal -->
+<div id="mapModal" class="map-modal" aria-hidden="true">
+  <div class="map-modal-backdrop"></div>
+  <div class="map-modal-panel" role="dialog" aria-labelledby="mapModalTitle">
+    <div class="map-modal-header">
+      <span class="map-modal-title" id="mapModalTitle"></span>
+      <a id="mapModalWowheadLink" href="#" target="_blank" rel="noopener noreferrer" class="map-wowhead-link">View on Wowhead ↗</a>
+      <button class="map-modal-close" id="mapModalClose" aria-label="Close map">✕</button>
+    </div>
+    <div class="map-modal-viewport" id="mapModalViewport">
+      <img id="mapModalImg" src="" alt="Zone map" draggable="false">
+      <div class="map-no-image" id="mapNoImage">Map not available</div>
+    </div>
+    <div class="map-modal-footer">
+      <button class="map-zoom-btn" id="mapZoomOut" title="Zoom out">−</button>
+      <button class="map-zoom-btn map-zoom-btn--fit" id="mapZoomReset" title="Fit to view">⛶</button>
+      <button class="map-zoom-btn" id="mapZoomIn" title="Zoom in">+</button>
     </div>
   </div>
 </div>
