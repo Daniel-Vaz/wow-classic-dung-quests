@@ -60,6 +60,12 @@ function formatMoney(copper) {
   return parts.join(' ');
 }
 
+function moneyTier(copper) {
+  if (copper >= 10000) return 'gold';
+  if (copper >= 100) return 'silver';
+  return 'copper';
+}
+
 // ═══════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════
@@ -512,7 +518,7 @@ function buildQuestCard(quest, dungeon, chainPos, chainTotal) {
     <div class="quest-card-footer">
       <div class="footer-pills">
         ${quest.xp ? `<div class="xp-pill">⭐ ${quest.xp.toLocaleString()} XP</div>` : ''}
-        ${quest.money ? `<div class="money-pill">${formatMoney(quest.money)}</div>` : ''}
+        ${quest.money ? `<div class="money-pill"><span class="coin-icon coin-${moneyTier(quest.money)}"></span>${formatMoney(quest.money)}</div>` : ''}
       </div>
       <button class="complete-btn" data-key="${key}">${isComplete ? '↩ Undo' : '✓ Complete'}</button>
     </div>
