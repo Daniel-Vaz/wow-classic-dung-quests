@@ -151,21 +151,33 @@ function renderDungeonHeader(dungeon) {
 
   const strategyEntries = STRATEGY_URLS[dungeon.id] || [];
   const guidesEl = document.getElementById('dungeonHeaderGuides');
-  if (dungeon.guideUrl || strategyEntries.length > 0) {
-    const questLinkHtml = dungeon.guideUrl
-      ? `<a href="${dungeon.guideUrl}" target="_blank" rel="noopener noreferrer" class="guides-box-link">📖 Quest Guide</a>`
-      : '';
-    const strategyLinksHtml = strategyEntries
-      .map(e => `<a href="${e.url}" target="_blank" rel="noopener noreferrer" class="guides-box-link">🎯 ${e.label}</a>`)
-      .join('');
-    guidesEl.innerHTML = `
-      <div class="guides-box">
-        <div class="guides-box-label"><img src="assets/icons/wowhead.png" class="guides-box-wowhead-logo" alt="Wowhead"> Wowhead Guides</div>
-        <div class="guides-box-links">${questLinkHtml}${strategyLinksHtml}</div>
-      </div>`;
-  } else {
-    guidesEl.innerHTML = '';
-  }
+
+  const mapName = DUNGEON_MAP_NAME[dungeon.id];
+  const mapBoxHtml = mapName
+    ? `<div class="guides-box map-instance-box">
+        <div class="guides-box-label">🗺 Instance Map</div>
+        <div class="guides-box-links">
+          <button class="guides-box-link map-instance-btn" data-map-name="${mapName}">View Map</button>
+        </div>
+      </div>`
+    : '';
+
+  const wowheadBoxHtml = (dungeon.guideUrl || strategyEntries.length > 0)
+    ? (() => {
+        const questLinkHtml = dungeon.guideUrl
+          ? `<a href="${dungeon.guideUrl}" target="_blank" rel="noopener noreferrer" class="guides-box-link">📖 Quest Guide</a>`
+          : '';
+        const strategyLinksHtml = strategyEntries
+          .map(e => `<a href="${e.url}" target="_blank" rel="noopener noreferrer" class="guides-box-link">🎯 ${e.label}</a>`)
+          .join('');
+        return `<div class="guides-box">
+          <div class="guides-box-label"><img src="assets/icons/wowhead.png" class="guides-box-wowhead-logo" alt="Wowhead"> Wowhead Guides</div>
+          <div class="guides-box-links">${questLinkHtml}${strategyLinksHtml}</div>
+        </div>`;
+      })()
+    : '';
+
+  guidesEl.innerHTML = mapBoxHtml + wowheadBoxHtml;
 
   const pct = quests.length ? (completedCount / quests.length * 100) : 0;
   document.getElementById('progressBar').style.width = pct + '%';
@@ -778,7 +790,7 @@ function openMapModal(locationName) {
 
   // Build level nav (empty for single-map zones)
   const levelNav   = document.getElementById('mapLevelNav');
-  const levels     = MULTI_LEVEL_MAPS[zoneId];
+  const levels     = MULTI_LEVEL_MAPS[locationName] || MULTI_LEVEL_MAPS[zoneId];
   levelNav.innerHTML = '';
 
   if (levels) {
@@ -885,6 +897,12 @@ function initMapModal() {
   document.addEventListener('click', e => {
     const link = e.target.closest('.location-link');
     if (link) openMapModal(link.dataset.location);
+  });
+
+  // Instance map button in dungeon header
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.map-instance-btn');
+    if (btn) openMapModal(btn.dataset.mapName);
   });
 }
 

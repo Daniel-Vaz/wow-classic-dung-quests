@@ -344,24 +344,122 @@ const ZONE_IDS = {
   'The Deadmines': 1581, 'Shadowfang Keep': 209,
   'The Stockade': 717, 'Gnomeregan': 721,
   'Scarlet Monastery': 796, 'Uldaman': 1337,
-  'Blackrock Depths': 1584, 'Blackrock Spire': 1583,
+  'Blackrock Depths': 1584, 'Blackrock Spire': 1583, 'Upper Blackrock Spire': 1583,
   'Blackrock Mountain': 1265, 'Scholomance': 2057,
   'Stratholme': 2017,
+};
+
+// ═══════════════════════════════════════
+//  DUNGEON INSTANCE MAP NAMES
+//  Maps dungeon ID → ZONE_IDS key so the map modal can open the instance map
+// ═══════════════════════════════════════
+const DUNGEON_MAP_NAME = {
+  rfc:       'Ragefire Chasm',
+  wc:        'Wailing Caverns',
+  deadmines: 'The Deadmines',
+  sfk:       'Shadowfang Keep',
+  stockades: 'The Stockade',
+  bfd:       'Blackfathom Deeps',
+  gnomer:    'Gnomeregan',
+  rfk:       'Razorfen Kraul',
+  sm:        'Scarlet Monastery',
+  rfd:       'Razorfen Downs',
+  uldaman:   'Uldaman',
+  zf:        "Zul'Farrak",
+  mara:      'Maraudon',
+  st:        "The Temple of Atal'Hakkar",
+  brd:       'Blackrock Depths',
+  lbrs:      'Blackrock Spire',
+  ubrs:      'Upper Blackrock Spire',
+  dm:        'Dire Maul',
+  scholo:    'Scholomance',
+  strath:    'Stratholme',
 };
 
 // ═══════════════════════════════════════
 //  MULTI-LEVEL MAPS
 // ═══════════════════════════════════════
 const MULTI_LEVEL_MAPS = {
+  // Keyed by zone ID
+  209: [
+    { label: 'Courtyard',              src: 'assets/maps/209_courtyard.jpg'  },
+    { label: 'Kitchen & Reception',    src: 'assets/maps/209_kitchen.jpg'    },
+    { label: 'Jail',                   src: 'assets/maps/209_jail.jpg'       },
+    { label: 'Courtyard (1st Floor)',  src: 'assets/maps/209_courtyard1f.jpg'},
+    { label: "Fenrus' Room",           src: 'assets/maps/209_fenrus.jpg'     },
+    { label: "Fenrus' 1st Floor",      src: 'assets/maps/209_fenrus1f.jpg'   },
+    { label: "Nandos' & Arugal",       src: 'assets/maps/209_nandos.jpg'     },
+  ],
+  719: [
+    { label: "The Pool of Ask'ar", src: 'assets/maps/719_pool.jpg'       },
+    { label: 'Moonshrine Sanctum', src: 'assets/maps/719_moonshrine.jpg' },
+    { label: 'The Forgotten Pool', src: 'assets/maps/719_forgotten.jpg'  },
+  ],
+  721: [
+    { label: 'Outside Entrance', src: 'assets/maps/721_outside.jpg' },
+    { label: 'First Level',      src: 'assets/maps/721_level1.jpg'  },
+    { label: 'Second Level',     src: 'assets/maps/721_level2.jpg'  },
+    { label: 'Third Level',      src: 'assets/maps/721_level3.jpg'  },
+    { label: 'Fourth Level',     src: 'assets/maps/721_level4.jpg'  },
+  ],
+  796: [
+    { label: 'Graveyard', src: 'assets/maps/796_graveyard.jpg' },
+    { label: 'Library',   src: 'assets/maps/796_library.jpg'   },
+    { label: 'Armory',    src: 'assets/maps/796_armory.jpg'    },
+    { label: 'Cathedral', src: 'assets/maps/796_cathedral.jpg' },
+  ],
+  1337: [
+    { label: 'Excavation Exterior', src: 'assets/maps/1337_exterior.jpg' },
+    { label: 'Ruins',               src: 'assets/maps/1337_ruins.jpg'    },
+    { label: "Khaz'goroth's Seat",  src: 'assets/maps/1337_seat.jpg'     },
+  ],
+  1477: [
+    { label: 'Sunken Temple', src: 'assets/maps/1477.jpg' },
+  ],
+  1581: [
+    { label: 'Cave Entrance', src: 'assets/maps/1581_cave.jpg' },
+    { label: 'Boat',          src: 'assets/maps/1581_boat.jpg' },
+  ],
   1583: [
-    { label: 'Level 1',          src: 'assets/maps/1583_1.jpg' },
-    { label: 'Level 2',          src: 'assets/maps/1583_2.jpg' },
-    { label: 'Level 3',          src: 'assets/maps/1583_3.jpg' },
-    { label: 'Level 4',          src: 'assets/maps/1583_4.jpg' },
-    { label: 'Level 5 (Part 1)', src: 'assets/maps/1583_5a.jpg' },
-    { label: 'Level 5 (Part 2)', src: 'assets/maps/1583_5b.jpg' },
-    { label: 'Level 6 (Part 1)', src: 'assets/maps/1583_6a.jpg' },
-    { label: 'Level 6 (Part 2)', src: 'assets/maps/1583_6b.jpg' },
-    { label: 'Level 7',          src: 'assets/maps/1583_7.jpg' },
+    { label: 'Hall of Blackhand',  src: 'assets/maps/1583_hallofblackhand.jpg' },
+    { label: 'Hordemar City',      src: 'assets/maps/1583_hordemar.jpg'        },
+    { label: 'Skitterweb Tunnels', src: 'assets/maps/1583_skitterweb.jpg'      },
+    { label: "Tazz'Alar",         src: 'assets/maps/1583_tazzalor.jpg'        },
+    { label: 'Dragonspire Hall',   src: 'assets/maps/1583_dragonspire.jpg'     },
+    { label: 'The Rookery',        src: 'assets/maps/1583_rookery.jpg'         },
+  ],
+  1584: [
+    { label: 'Detention Block',  src: 'assets/maps/1584_detention.jpg'   },
+    { label: 'Shadowforge City', src: 'assets/maps/1584_shadowforge.jpg' },
+  ],
+  2017: [
+    { label: 'Living Side', src: 'assets/maps/2017_living.jpg' },
+    { label: 'Undead Side', src: 'assets/maps/2017_undead.jpg' },
+  ],
+  2057: [
+    { label: 'The Reliquary',        src: 'assets/maps/2057_reliquary.jpg'  },
+    { label: 'Chamber of Summoning', src: 'assets/maps/2057_summoning.jpg'  },
+    { label: 'The Upper Study',      src: 'assets/maps/2057_upperstudy.jpg' },
+    { label: "Headmaster's Study",   src: 'assets/maps/2057_headmaster.jpg' },
+  ],
+  2100: [
+    { label: 'Caverns',           src: 'assets/maps/2100_caverns.jpg'   },
+    { label: "Zaetar's Grave",    src: 'assets/maps/2100_zaetars.jpg'   },
+    { label: 'The Wicked Grotto', src: 'assets/maps/2100_grotto.jpg'    },
+    { label: 'Foulspore Cavern',  src: 'assets/maps/2100_foulspore.jpg' },
+  ],
+  2557: [
+    { label: 'Gordok Commons (North)',                   src: 'assets/maps/2557_gordok.jpg'       },
+    { label: 'Capital Gardens (West)',                   src: 'assets/maps/2557_capital.jpg'      },
+    { label: 'Court of the Highborne (West)',            src: 'assets/maps/2557_court.jpg'        },
+    { label: "Prison of Immol'thar (West)",              src: 'assets/maps/2557_prison.jpg'       },
+    { label: 'Warpwood Quarter (East)',                  src: 'assets/maps/2557_warpwood.jpg'     },
+    { label: 'Conservatory & Shrine of Eldretharr (East)', src: 'assets/maps/2557_conservatory.jpg' },
+  ],
+  // Keyed by location name (for dungeons sharing a zone ID)
+  'Upper Blackrock Spire': [
+    { label: 'Dragonspire Hall',  src: 'assets/maps/ubrs_dragonspire.jpg' },
+    { label: 'The Rookery',       src: 'assets/maps/ubrs_rookery.jpg'     },
+    { label: 'Blackrock Stadium', src: 'assets/maps/ubrs_stadium.jpg'     },
   ],
 };

@@ -895,16 +895,22 @@ body::before {
 }
 
 
-/* ── WOWHEAD GUIDES BOX IN DUNGEON HEADER ── */
+/* ── GUIDES / MAP BOXES IN DUNGEON HEADER ── */
+#dungeonHeaderGuides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: stretch;
+  margin-top: 14px;
+}
 .guides-box {
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
   gap: 5px;
   border: 1px solid rgba(180,150,60,0.35);
   border-radius: 3px;
   background: rgba(180,150,60,0.04);
   padding: 6px 10px;
-  margin-top: 14px;
 }
 .guides-box-label {
   font-family: 'Cinzel', serif;
@@ -945,6 +951,34 @@ body::before {
   color: #7fbfff;
   border-color: #4da6ff;
   background: rgba(77,166,255,0.08);
+}
+button.guides-box-link {
+  background: transparent;
+  cursor: pointer;
+}
+.map-instance-box {
+  border-color: rgba(200,168,75,0.55);
+  background: rgba(200,168,75,0.06);
+  box-shadow: 0 0 8px rgba(200,168,75,0.08);
+}
+.map-instance-box .guides-box-label {
+  opacity: 0.9;
+}
+.map-instance-box .guides-box-links {
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+}
+.map-instance-box .guides-box-link {
+  color: var(--gold);
+  border-color: rgba(200,168,75,0.45);
+  font-size: 0.72rem;
+  padding: 3px 14px;
+}
+.map-instance-box .guides-box-link:hover {
+  color: var(--gold-light);
+  border-color: var(--gold);
+  background: rgba(200,168,75,0.12);
 }
 
 /* ── WOWHEAD LINK BUTTON ── */
@@ -1269,6 +1303,12 @@ body::before {
   }
   .filter-group,
   .faction-group {
+    width: 100%;
+  }
+  #dungeonHeaderGuides {
+    flex-direction: column;
+  }
+  #dungeonHeaderGuides .guides-box {
     width: 100%;
   }
 }
